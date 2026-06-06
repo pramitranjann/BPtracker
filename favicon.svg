@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="BP Pattern icon">
+  <rect width="512" height="512" rx="132" fill="#ffd500" />
+  <path
+    d="M98 284h76l26-42 38 95 44-116 28 63h104"
+    fill="none"
+    stroke="#171412"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    stroke-width="28"
+  />
+  <path
+    d="M170 170h108c45 0 74 26 74 67 0 27-12 46-35 57 29 10 45 33 45 65 0 44-31 73-81 73H170V170Zm53 45v59h49c18 0 28-11 28-29s-10-30-28-30h-49Zm0 100v72h56c20 0 31-13 31-36 0-22-11-36-31-36h-56Z"
+    fill="#171412"
+  />
+</svg>
