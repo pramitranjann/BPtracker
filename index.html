@@ -185,7 +185,6 @@
           <section class="patient-screen" data-screen="trends">
             <article class="screen-card screen-card-trends">
               <div class="screen-copy">
-                <p class="screen-kicker" id="trendHeroChip">7 days</p>
                 <h2 id="trendHeroTitle">Recent readings</h2>
                 <p class="hero-subcopy" id="trendHeroCopy">Latest pattern.</p>
               </div>
@@ -195,13 +194,27 @@
                 <button class="range-button" data-range="90" type="button">90D</button>
                 <button class="range-button" data-range="all" type="button">All</button>
               </section>
-              <section class="metric-rail" id="patientTrendMetrics"></section>
               <article class="chart-card compact-chart-card">
-                <canvas id="patientTrendChart" width="640" height="240" aria-label="Patient trend chart"></canvas>
+                <div class="chart-head">
+                  <p class="section-kicker">Trend</p>
+                  <div class="chart-legend" aria-hidden="true">
+                    <span class="legend-item">
+                      <span class="legend-swatch legend-swatch-sys"></span>
+                      SYS
+                    </span>
+                    <span class="legend-item">
+                      <span class="legend-swatch legend-swatch-dia"></span>
+                      DIA
+                    </span>
+                  </div>
+                </div>
+                <canvas id="patientTrendChart" width="640" height="300" aria-label="Patient trend chart"></canvas>
               </article>
-              <article class="soft-card compact-note-card">
-                <div id="patientTrendNarrative" class="narrative-copy"></div>
-              </article>
+              <section class="metric-rail" id="patientTrendMetrics"></section>
+              <details class="history-disclosure">
+                <summary>Recent readings</summary>
+                <div id="patientRecentLogs" class="patient-log-list"></div>
+              </details>
               <div class="screen-actions">
                 <button class="ghost-button" type="button" data-action="go-home">Home</button>
                 <button class="primary-button" type="button" data-action="start-log">Log</button>

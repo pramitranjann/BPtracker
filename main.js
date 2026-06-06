@@ -40,12 +40,11 @@ const els = isBrowser
       afterWaking: document.querySelector("#afterWaking"),
       afterNap: document.querySelector("#afterNap"),
       afterMedication: document.querySelector("#afterMedication"),
-      trendHeroChip: document.querySelector("#trendHeroChip"),
       trendHeroTitle: document.querySelector("#trendHeroTitle"),
       trendHeroCopy: document.querySelector("#trendHeroCopy"),
       patientTrendMetrics: document.querySelector("#patientTrendMetrics"),
       patientTrendChart: document.querySelector("#patientTrendChart"),
-      patientTrendNarrative: document.querySelector("#patientTrendNarrative"),
+      patientRecentLogs: document.querySelector("#patientRecentLogs"),
       caregiverHeroChip: document.querySelector("#caregiverHeroChip"),
       caregiverHeroTitle: document.querySelector("#caregiverHeroTitle"),
       caregiverHeroCopy: document.querySelector("#caregiverHeroCopy"),
@@ -322,7 +321,6 @@ function renderPatientTrends() {
   const readings = getReadingsForRange(state.patientRange);
   const latest = readings[0];
   const average = getAverage(readings);
-  const high = readings.filter((reading) => classifyReading(reading) === "high").length;
 
   renderMetricGrid(els.patientTrendMetrics, [
     {
@@ -333,34 +331,41 @@ function renderPatientTrends() {
     {
       label: "Average",
       value: readings.length ? `${average.systolic}/${average.diastolic}` : "No data",
-      detail: readings.length ? `Pulse ${average.pulse}` : "Waiting"
-    },
-    {
-      label: "High",
-      value: String(high),
-      detail: readings.length ? `${high} in this range` : "No high readings"
+      detail: readings.length ? `${readings.length} reading${readings.length === 1 ? "" : "s"}` : "Waiting"
     }
   ]);
 
-  els.trendHeroChip.textContent = state.patientRange === "all" ? "All time" : `${state.patientRange} days`;
-  els.trendHeroTitle.textContent = latest
-    ? `${latest.systolic}/${latest.diastolic} latest`
-    : "Recent readings";
-  els.trendHeroCopy.textContent = readings.length ? "Latest pattern." : "No readings yet.";
+  els.trendHeroTitle.textContent = latest ? `${latest.systolic}/${latest.diastolic}` : "Recent readings";
+  els.trendHeroCopy.textContent = latest ? `${formatDate(latest.capturedAt)} • Pulse ${latest.pulse}` : "No readings yet.";
 
   if (!readings.length) {
-    els.patientTrendNarrative.innerHTML = "<p>No readings yet.</p>";
+    els.patientRecentLogs.innerHTML = "<p class=\"history-meta\">No readings yet.</p>";
     drawTrendChart(els.patientTrendChart, []);
     return;
   }
 
-  const latestContext = buildContextSummary(latest.contextFlags);
-  els.patientTrendNarrative.innerHTML = `
-    <p><strong>Average:</strong> ${average.systolic}/${average.diastolic}.</p>
-    <p><strong>Latest context:</strong> ${latestContext || "No context added"}.</p>
-  `;
-
   drawTrendChart(els.patientTrendChart, readings, { compact: true });
+  renderPatientRecentLogs(readings);
+}
+
+function renderPatientRecentLogs(readings) {
+  els.patientRecentLogs.innerHTML = "";
+
+  for (const reading of readings.slice(0, 8)) {
+    const item = document.createElement("article");
+    item.className = "patient-log-item";
+    item.innerHTML = `
+      <div>
+        <p class="history-reading">${reading.systolic}/${reading.diastolic}</p>
+        <p class="history-meta">${formatDate(reading.capturedAt)}</p>
+      </div>
+      <div class="patient-log-meta">
+        <p class="history-reading">Pulse ${reading.pulse}</p>
+        <p class="history-meta">${buildContextSummary(reading.contextFlags) || "No context"}</p>
+      </div>
+    `;
+    els.patientRecentLogs.append(item);
+  }
 }
 
 function renderCaregiver() {

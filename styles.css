@@ -259,6 +259,7 @@ h3 {
   border-radius: 24px;
   border: 1px solid var(--line);
   background: var(--surface);
+  color: var(--ink);
   text-align: left;
   transition:
     transform 160ms var(--ease-out),
@@ -267,6 +268,7 @@ h3 {
 }
 
 .choice-card strong {
+  color: var(--ink);
   font-size: 1.7rem;
   line-height: 1.05;
 }
@@ -560,7 +562,7 @@ h3 {
 }
 
 .metric-rail {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .metric-grid {
@@ -569,6 +571,7 @@ h3 {
 
 .metric-card {
   padding: 18px;
+  box-shadow: none;
 }
 
 .metric-label {
@@ -588,11 +591,107 @@ h3 {
 }
 
 .compact-chart-card {
-  padding: 10px;
+  padding: 14px 14px 10px;
 }
 
 .compact-note-card {
   padding: 16px 18px;
+}
+
+.chart-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.chart-legend {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.legend-swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+}
+
+.legend-swatch-sys {
+  background: #262032;
+}
+
+.legend-swatch-dia {
+  background: #e8c21c;
+}
+
+.history-disclosure {
+  border-radius: 18px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  padding: 14px 16px;
+}
+
+.history-disclosure summary {
+  cursor: pointer;
+  list-style: none;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.history-disclosure summary::after {
+  content: "›";
+  font-size: 1rem;
+  color: var(--muted);
+  transform: rotate(90deg);
+  transition: transform 160ms var(--ease-out);
+}
+
+.history-disclosure summary::-webkit-details-marker {
+  display: none;
+}
+
+.history-disclosure[open] summary {
+  margin-bottom: 12px;
+}
+
+.history-disclosure[open] summary::after {
+  transform: rotate(270deg);
+}
+
+.patient-log-list {
+  display: grid;
+  gap: 10px;
+}
+
+.patient-log-item {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+}
+
+.patient-log-item:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.patient-log-meta {
+  text-align: right;
 }
 
 .soft-card-wide {
@@ -724,6 +823,18 @@ body[data-view="patient"] .compact-chart-card,
 body[data-view="patient"] .compact-note-card {
   border-radius: 18px;
   box-shadow: none;
+}
+
+body[data-view="patient"] .metric-card {
+  padding: 16px;
+}
+
+body[data-view="patient"] .metric-label {
+  margin-bottom: 8px;
+}
+
+body[data-view="patient"] .metric-value {
+  font-size: clamp(1.5rem, 6vw, 2rem);
 }
 
 .hidden,
