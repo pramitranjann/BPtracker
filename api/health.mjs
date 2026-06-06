@@ -1,16 +1,19 @@
-import { sendJson } from "./_lib/http.mjs";
-import { ensureDataStore, getStorageMode } from "./_lib/store.mjs";
+import { jsonResponse } from "../lib/http.mjs";
+import { ensureDataStore, getStorageMode } from "../lib/store.mjs";
 
-export default async function handler(_req, res) {
+export async function GET() {
   try {
     await ensureDataStore();
-    sendJson(res, 200, {
+    return jsonResponse({
       ok: true,
       storage: getStorageMode()
     });
   } catch (error) {
-    sendJson(res, 500, {
-      error: error instanceof Error ? error.message : "Unexpected server error."
-    });
+    return jsonResponse(
+      {
+        error: error instanceof Error ? error.message : "Unexpected server error."
+      },
+      { status: 500 }
+    );
   }
 }

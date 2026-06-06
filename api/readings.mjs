@@ -1,24 +1,30 @@
-import { parseJsonBody, sendJson } from "./_lib/http.mjs";
-import { normalizeReading, readReadings, writeReading } from "./_lib/store.mjs";
+import { jsonResponse, parseRequestJson } from "../lib/http.mjs";
+import { normalizeReading, readReadings, writeReading } from "../lib/store.mjs";
 
-export default async function handler(req, res) {
+export async function GET() {
   try {
-    if (req.method === "GET") {
-      sendJson(res, 200, { readings: await readReadings() });
-      return;
-    }
-
-    if (req.method === "POST") {
-      const body = await parseJsonBody(req);
-      const reading = await writeReading(normalizeReading(body));
-      sendJson(res, 201, { reading });
-      return;
-    }
-
-    sendJson(res, 405, { error: "Method not allowed." });
+    return jsonResponse({ readings: await readReadings() });
   } catch (error) {
-    sendJson(res, 500, {
-      error: error instanceof Error ? error.message : "Unexpected server error."
-    });
+    return jsonResponse(
+      {
+        error: error instanceof Error ? error.message : "Unexpected server error."
+      },
+      { status: 500 }
+    );
+  }
+}
+
+export async function POST(request) {
+  try {
+    const body = await parseRequestJson(request);
+    const reading = await writeReading(normalizeReading(body));
+    return jsonResponse({ reading }, { status: 201 });
+  } catch (error) {
+    return jsonResponse(
+      {
+        error: error instanceof Error ? error.message : "Unexpected server error."
+      },
+      { status: 500 }
+    );
   }
 }

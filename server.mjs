@@ -1,15 +1,13 @@
 import { createServer } from "node:http";
 import { createReadStream, existsSync, readFileSync, statSync } from "node:fs";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { extname, join, normalize } from "node:path";
 import { fileURLToPath } from "node:url";
+import { ensureDataStore, getStorageMode, normalizeReading, readReadings, writeReading } from "./lib/store.mjs";
 
 const root = fileURLToPath(new URL(".", import.meta.url));
 loadEnvFile(join(root, ".env"));
 loadEnvFile(join(root, ".env.local"));
 const port = Number(process.env.PORT || 4173);
-const dataDir = join(root, "data");
-const readingsFile = join(dataDir, "readings.json");
 
 const mimeTypes = {
   ".css": "text/css; charset=utf-8",
@@ -30,7 +28,7 @@ createServer(async (req, res) => {
     if (requestUrl.pathname === "/api/health" && req.method === "GET") {
       sendJson(res, 200, {
         ok: true,
-        storage: "file"
+        storage: getStorageMode()
       });
       return;
     }
@@ -42,12 +40,7 @@ createServer(async (req, res) => {
 
     if (requestUrl.pathname === "/api/readings" && req.method === "POST") {
       const body = await parseJsonBody(req);
-      const reading = normalizeReading(body);
-      const readings = await readReadings();
-      const nextReadings = [reading, ...readings.filter((item) => item.id !== reading.id)].sort(
-        (a, b) => new Date(b.capturedAt) - new Date(a.capturedAt)
-      );
-      await writeReadings(nextReadings);
+      const reading = await writeReading(normalizeReading(body));
       sendJson(res, 201, { reading });
       return;
     }
@@ -62,48 +55,6 @@ createServer(async (req, res) => {
 }).listen(port, () => {
   console.log(`BP tracker available at http://127.0.0.1:${port}`);
 });
-
-async function ensureDataStore() {
-  await mkdir(dataDir, { recursive: true });
-  if (!existsSync(readingsFile)) {
-    await writeFile(readingsFile, "[]\n", "utf8");
-  }
-}
-
-async function readReadings() {
-  const content = await readFile(readingsFile, "utf8");
-  const parsed = JSON.parse(content || "[]");
-  return Array.isArray(parsed) ? parsed : [];
-}
-
-async function writeReadings(readings) {
-  await writeFile(readingsFile, `${JSON.stringify(readings, null, 2)}\n`, "utf8");
-}
-
-function normalizeReading(reading) {
-  const contextFlags = {
-    ateRecently: Boolean(reading.contextFlags?.ateRecently),
-    hadCaffeine: Boolean(reading.contextFlags?.hadCaffeine),
-    afterWaking: Boolean(reading.contextFlags?.afterWaking),
-    afterNap: Boolean(reading.contextFlags?.afterNap),
-    afterMedication: Boolean(reading.contextFlags?.afterMedication)
-  };
-
-  return {
-    id: String(reading.id || crypto.randomUUID()),
-    systolic: Number(reading.systolic) || 0,
-    diastolic: Number(reading.diastolic) || 0,
-    pulse: Number(reading.pulse) || 0,
-    capturedAt: String(reading.capturedAt || new Date().toISOString()),
-    context: String(reading.context || ""),
-    contextFlags,
-    position: String(reading.position || "Sitting"),
-    notes: String(reading.notes || ""),
-    medicationTaken: Boolean(reading.medicationTaken || contextFlags.afterMedication),
-    fasting: Boolean(reading.fasting),
-    entryMethod: String(reading.entryMethod || "manual")
-  };
-}
 
 async function parseJsonBody(req) {
   const chunks = [];
