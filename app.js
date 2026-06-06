@@ -1,66 +1,73 @@
 const API_BASE = "/api";
 const SAMPLE_COUNT = 18;
 const PATIENT_LOG_ORDER = ["sys", "dia", "pulse", "context"];
+const isBrowser = typeof window !== "undefined" && typeof document !== "undefined";
 
-const state = {
-  readings: [],
-  patientRange: "7",
-  caregiverRange: "30",
-  patientScreen: "home",
-  view: getCurrentView(),
-  deferredPrompt: null,
-  lastSavedReadingId: null,
-  draft: createEmptyDraft()
-};
+const state = isBrowser
+  ? {
+      readings: [],
+      patientRange: "7",
+      caregiverRange: "30",
+      patientScreen: "home",
+      view: getCurrentView(),
+      deferredPrompt: null,
+      lastSavedReadingId: null,
+      draft: createEmptyDraft()
+    }
+  : {};
 
-const els = {
-  patientScreens: [...document.querySelectorAll(".patient-screen")],
-  patientRangeButtons: [...document.querySelectorAll(".range-button")],
-  caregiverRangeButtons: [...document.querySelectorAll(".dashboard-range-button")],
-  switchViewLink: document.querySelector("#switchViewLink"),
-  installButton: document.querySelector("#installButton"),
-  patientView: document.querySelector("#patientView"),
-  caregiverView: document.querySelector("#caregiverView"),
-  topbarEyebrow: document.querySelector("#topbarEyebrow"),
-  topbarTitle: document.querySelector("#topbarTitle"),
-  topbarCopy: document.querySelector("#topbarCopy"),
-  patientGreeting: document.querySelector("#patientGreeting"),
-  sysInput: document.querySelector("#sysInput"),
-  diaInput: document.querySelector("#diaInput"),
-  pulseInput: document.querySelector("#pulseInput"),
-  sysNextButton: document.querySelector("#sysNextButton"),
-  diaNextButton: document.querySelector("#diaNextButton"),
-  pulseNextButton: document.querySelector("#pulseNextButton"),
-  ateRecently: document.querySelector("#ateRecently"),
-  hadCaffeine: document.querySelector("#hadCaffeine"),
-  afterWaking: document.querySelector("#afterWaking"),
-  afterNap: document.querySelector("#afterNap"),
-  afterMedication: document.querySelector("#afterMedication"),
-  trendHeroChip: document.querySelector("#trendHeroChip"),
-  trendHeroTitle: document.querySelector("#trendHeroTitle"),
-  trendHeroCopy: document.querySelector("#trendHeroCopy"),
-  patientTrendMetrics: document.querySelector("#patientTrendMetrics"),
-  patientTrendChart: document.querySelector("#patientTrendChart"),
-  patientTrendNarrative: document.querySelector("#patientTrendNarrative"),
-  caregiverHeroChip: document.querySelector("#caregiverHeroChip"),
-  caregiverHeroTitle: document.querySelector("#caregiverHeroTitle"),
-  caregiverHeroCopy: document.querySelector("#caregiverHeroCopy"),
-  caregiverOverviewMetrics: document.querySelector("#caregiverOverviewMetrics"),
-  caregiverTrendChart: document.querySelector("#caregiverTrendChart"),
-  caregiverTrendNarrative: document.querySelector("#caregiverTrendNarrative"),
-  caregiverInsights: document.querySelector("#caregiverInsights"),
-  caregiverFlagged: document.querySelector("#caregiverFlagged"),
-  caregiverHistory: document.querySelector("#caregiverHistory"),
-  historySearch: document.querySelector("#historySearch"),
-  exportJsonButton: document.querySelector("#exportJsonButton"),
-  exportCsvButton: document.querySelector("#exportCsvButton"),
-  metricTemplate: document.querySelector("#metricTemplate")
-};
+const els = isBrowser
+  ? {
+      patientScreens: [...document.querySelectorAll(".patient-screen")],
+      patientRangeButtons: [...document.querySelectorAll(".range-button")],
+      caregiverRangeButtons: [...document.querySelectorAll(".dashboard-range-button")],
+      switchViewLink: document.querySelector("#switchViewLink"),
+      installButton: document.querySelector("#installButton"),
+      patientView: document.querySelector("#patientView"),
+      caregiverView: document.querySelector("#caregiverView"),
+      topbarEyebrow: document.querySelector("#topbarEyebrow"),
+      topbarTitle: document.querySelector("#topbarTitle"),
+      topbarCopy: document.querySelector("#topbarCopy"),
+      patientGreeting: document.querySelector("#patientGreeting"),
+      sysInput: document.querySelector("#sysInput"),
+      diaInput: document.querySelector("#diaInput"),
+      pulseInput: document.querySelector("#pulseInput"),
+      sysNextButton: document.querySelector("#sysNextButton"),
+      diaNextButton: document.querySelector("#diaNextButton"),
+      pulseNextButton: document.querySelector("#pulseNextButton"),
+      ateRecently: document.querySelector("#ateRecently"),
+      hadCaffeine: document.querySelector("#hadCaffeine"),
+      afterWaking: document.querySelector("#afterWaking"),
+      afterNap: document.querySelector("#afterNap"),
+      afterMedication: document.querySelector("#afterMedication"),
+      trendHeroChip: document.querySelector("#trendHeroChip"),
+      trendHeroTitle: document.querySelector("#trendHeroTitle"),
+      trendHeroCopy: document.querySelector("#trendHeroCopy"),
+      patientTrendMetrics: document.querySelector("#patientTrendMetrics"),
+      patientTrendChart: document.querySelector("#patientTrendChart"),
+      patientTrendNarrative: document.querySelector("#patientTrendNarrative"),
+      caregiverHeroChip: document.querySelector("#caregiverHeroChip"),
+      caregiverHeroTitle: document.querySelector("#caregiverHeroTitle"),
+      caregiverHeroCopy: document.querySelector("#caregiverHeroCopy"),
+      caregiverOverviewMetrics: document.querySelector("#caregiverOverviewMetrics"),
+      caregiverTrendChart: document.querySelector("#caregiverTrendChart"),
+      caregiverTrendNarrative: document.querySelector("#caregiverTrendNarrative"),
+      caregiverInsights: document.querySelector("#caregiverInsights"),
+      caregiverFlagged: document.querySelector("#caregiverFlagged"),
+      caregiverHistory: document.querySelector("#caregiverHistory"),
+      historySearch: document.querySelector("#historySearch"),
+      exportJsonButton: document.querySelector("#exportJsonButton"),
+      exportCsvButton: document.querySelector("#exportCsvButton"),
+      metricTemplate: document.querySelector("#metricTemplate")
+    }
+  : {};
 
-init().catch((error) => {
-  console.error(error);
-  window.alert("The app could not start correctly. Check the console for details.");
-});
+if (isBrowser) {
+  init().catch((error) => {
+    console.error(error);
+    window.alert("The app could not start correctly. Check the console for details.");
+  });
+}
 
 async function init() {
   wireViewMode();
