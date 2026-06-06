@@ -6,8 +6,14 @@ import { tmpdir } from "node:os";
 const bundledReadingsFile = join(process.cwd(), "data", "readings.json");
 const runtimeDataDir = join(tmpdir(), "bp-tracker");
 const runtimeReadingsFile = join(runtimeDataDir, "readings.json");
+const supabaseUrl = process.env.SUPABASE_URL?.replace(/\/$/, "");
+const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 export async function ensureDataStore() {
+  if (isSupabaseConfigured()) {
+    return;
+  }
+
   await mkdir(runtimeDataDir, { recursive: true });
 
   if (existsSync(runtimeReadingsFile)) {
@@ -19,6 +25,19 @@ export async function ensureDataStore() {
 }
 
 export async function readReadings() {
+  if (isSupabaseConfigured()) {
+    const response = await fetch(`${supabaseUrl}/rest/v1/readings?select=*&order=capturedAt.desc`, {
+      headers: supabaseHeaders()
+    });
+
+    if (!response.ok) {
+      throw new Error(`Supabase read failed: ${response.status} ${await response.text()}`);
+    }
+
+    const payload = await response.json();
+    return Array.isArray(payload) ? payload.map(normalizeReading) : [];
+  }
+
   await ensureDataStore();
   const content = await readFile(runtimeReadingsFile, "utf8");
   const parsed = JSON.parse(content || "[]");
@@ -26,8 +45,56 @@ export async function readReadings() {
 }
 
 export async function writeReadings(readings) {
+  if (isSupabaseConfigured()) {
+    const response = await fetch(`${supabaseUrl}/rest/v1/readings`, {
+      method: "POST",
+      headers: {
+        ...supabaseHeaders(),
+        "Content-Type": "application/json",
+        Prefer: "resolution=merge-duplicates"
+      },
+      body: JSON.stringify(readings.map(normalizeReading))
+    });
+
+    if (!response.ok) {
+      throw new Error(`Supabase write failed: ${response.status} ${await response.text()}`);
+    }
+
+    return;
+  }
+
   await ensureDataStore();
   await writeFile(runtimeReadingsFile, `${JSON.stringify(readings, null, 2)}\n`, "utf8");
+}
+
+export async function writeReading(reading) {
+  if (isSupabaseConfigured()) {
+    const normalized = normalizeReading(reading);
+    const response = await fetch(`${supabaseUrl}/rest/v1/readings`, {
+      method: "POST",
+      headers: {
+        ...supabaseHeaders(),
+        "Content-Type": "application/json",
+        Prefer: "resolution=merge-duplicates,return=representation"
+      },
+      body: JSON.stringify([normalized])
+    });
+
+    if (!response.ok) {
+      throw new Error(`Supabase write failed: ${response.status} ${await response.text()}`);
+    }
+
+    const payload = await response.json();
+    return Array.isArray(payload) && payload[0] ? normalizeReading(payload[0]) : normalized;
+  }
+
+  const normalized = normalizeReading(reading);
+  const readings = await readReadings();
+  const nextReadings = [normalized, ...readings.filter((item) => item.id !== normalized.id)].sort(
+    (a, b) => new Date(b.capturedAt) - new Date(a.capturedAt)
+  );
+  await writeReadings(nextReadings);
+  return normalized;
 }
 
 export function normalizeReading(reading) {
@@ -52,5 +119,20 @@ export function normalizeReading(reading) {
     medicationTaken: Boolean(reading?.medicationTaken || contextFlags.afterMedication),
     fasting: Boolean(reading?.fasting),
     entryMethod: String(reading?.entryMethod || "manual")
+  };
+}
+
+export function getStorageMode() {
+  return isSupabaseConfigured() ? "supabase" : "tmp-file";
+}
+
+function isSupabaseConfigured() {
+  return Boolean(supabaseUrl && supabaseServiceRoleKey);
+}
+
+function supabaseHeaders() {
+  return {
+    apikey: supabaseServiceRoleKey,
+    Authorization: `Bearer ${supabaseServiceRoleKey}`
   };
 }

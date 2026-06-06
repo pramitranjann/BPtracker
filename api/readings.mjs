@@ -1,5 +1,5 @@
 import { parseJsonBody, sendJson } from "./_lib/http.mjs";
-import { normalizeReading, readReadings, writeReadings } from "./_lib/store.mjs";
+import { normalizeReading, readReadings, writeReading } from "./_lib/store.mjs";
 
 export default async function handler(req, res) {
   try {
@@ -10,12 +10,7 @@ export default async function handler(req, res) {
 
     if (req.method === "POST") {
       const body = await parseJsonBody(req);
-      const reading = normalizeReading(body);
-      const readings = await readReadings();
-      const nextReadings = [reading, ...readings.filter((item) => item.id !== reading.id)].sort(
-        (a, b) => new Date(b.capturedAt) - new Date(a.capturedAt)
-      );
-      await writeReadings(nextReadings);
+      const reading = await writeReading(normalizeReading(body));
       sendJson(res, 201, { reading });
       return;
     }

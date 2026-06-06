@@ -30,8 +30,7 @@ createServer(async (req, res) => {
     if (requestUrl.pathname === "/api/health" && req.method === "GET") {
       sendJson(res, 200, {
         ok: true,
-        storage: "file",
-        ocrConfigured: Boolean(process.env.OPENAI_API_KEY)
+        storage: "file"
       });
       return;
     }
@@ -50,26 +49,6 @@ createServer(async (req, res) => {
       );
       await writeReadings(nextReadings);
       sendJson(res, 201, { reading });
-      return;
-    }
-
-    if (requestUrl.pathname === "/api/ocr" && req.method === "POST") {
-      const body = await parseJsonBody(req);
-      if (!body?.imageDataUrl || typeof body.imageDataUrl !== "string") {
-        sendJson(res, 400, { error: "imageDataUrl is required." });
-        return;
-      }
-
-      if (!process.env.OPENAI_API_KEY) {
-        sendJson(res, 501, {
-          error: "Server OCR is not configured.",
-          code: "OCR_NOT_CONFIGURED"
-        });
-        return;
-      }
-
-      const ocrResult = await runOpenAiOcr(body.imageDataUrl);
-      sendJson(res, 200, ocrResult);
       return;
     }
 
@@ -133,85 +112,6 @@ async function parseJsonBody(req) {
   }
   const raw = Buffer.concat(chunks).toString("utf8").trim();
   return raw ? JSON.parse(raw) : {};
-}
-
-async function runOpenAiOcr(imageDataUrl) {
-  const model = process.env.OPENAI_VISION_MODEL || "gpt-4.1-mini";
-  const response = await fetch("https://api.openai.com/v1/responses", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${process.env.OPENAI_API_KEY}`
-    },
-    body: JSON.stringify({
-      model,
-      max_output_tokens: 250,
-      input: [
-        {
-          role: "user",
-          content: [
-            {
-              type: "input_text",
-              text:
-                "Read the blood pressure monitor display in this image. Return strict JSON with keys rawText, systolic, diastolic, pulse. Use integers when visible; use null when not confidently visible."
-            },
-            {
-              type: "input_image",
-              image_url: imageDataUrl
-            }
-          ]
-        }
-      ]
-    })
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`OpenAI OCR failed: ${response.status} ${errorText}`);
-  }
-
-  const payload = await response.json();
-  const responseText = extractResponseText(payload);
-  const parsed = parseOcrJson(responseText);
-
-  return {
-    engine: `openai:${model}`,
-    rawText: String(parsed.rawText || ""),
-    values: {
-      systolic: numberOrNull(parsed.systolic),
-      diastolic: numberOrNull(parsed.diastolic),
-      pulse: numberOrNull(parsed.pulse)
-    },
-    message: "Numbers extracted by the server OCR. Confirm them before saving."
-  };
-}
-
-function extractResponseText(payload) {
-  if (typeof payload.output_text === "string" && payload.output_text.trim()) {
-    return payload.output_text.trim();
-  }
-
-  const textChunks = [];
-  for (const output of payload.output || []) {
-    for (const item of output.content || []) {
-      if (item.type === "output_text" && item.text) {
-        textChunks.push(item.text);
-      }
-    }
-  }
-
-  return textChunks.join("\n").trim();
-}
-
-function parseOcrJson(text) {
-  const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
-  const candidate = fenced ? fenced[1] : text;
-  return JSON.parse(candidate);
-}
-
-function numberOrNull(value) {
-  const number = Number(value);
-  return Number.isFinite(number) ? number : null;
 }
 
 function serveStaticAsset(urlPath, res) {
