@@ -1,0 +1,300 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta
+      name="description"
+      content="A guided blood pressure tracker with a simple patient flow and a separate caregiver dashboard."
+    />
+    <title>BP Pattern</title>
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <div class="topbar-copy">
+          <p class="eyebrow" id="topbarEyebrow">BP Pattern</p>
+          <h1 id="topbarTitle">BP Pattern</h1>
+          <p class="hero-copy hidden" id="topbarCopy"></p>
+        </div>
+        <div class="topbar-actions">
+          <a id="switchViewLink" class="ghost-button" href="/?view=caregiver">Caregiver view</a>
+          <button id="installButton" class="ghost-button hidden" type="button">Install</button>
+        </div>
+      </header>
+
+      <main class="main-shell">
+        <section id="patientView" class="mode-shell active">
+          <section class="patient-screen active" data-screen="home">
+            <article class="screen-card screen-card-home">
+              <div class="screen-copy screen-copy-home">
+                <h2 id="patientGreeting">Hello, Parul</h2>
+              </div>
+              <div class="choice-stack">
+                <button class="choice-card choice-card-accent" type="button" data-action="start-log">
+                  <strong>Log</strong>
+                </button>
+                <button class="choice-card" type="button" data-action="open-trends">
+                  <strong>Trends</strong>
+                </button>
+              </div>
+            </article>
+          </section>
+
+          <section class="patient-screen" data-screen="sys">
+            <article class="screen-card screen-card-entry">
+              <div class="step-progress">
+                <span class="step-dot active"></span>
+                <span class="step-dot"></span>
+                <span class="step-dot"></span>
+                <span class="step-dot"></span>
+              </div>
+              <div class="entry-stage">
+                <div class="screen-copy">
+                  <p class="screen-kicker">Step 1</p>
+                  <h2>SYS</h2>
+                </div>
+                <label class="single-input-card">
+                  <span class="sr-only">Systolic</span>
+                  <input
+                    id="sysInput"
+                    type="tel"
+                    inputmode="numeric"
+                    pattern="[0-9]*"
+                    maxlength="3"
+                    placeholder="120"
+                  />
+                </label>
+                <div class="screen-actions screen-actions-inline">
+                  <button class="ghost-button" type="button" data-action="go-home">Home</button>
+                  <button class="primary-button" id="sysNextButton" type="button" data-action="to-dia">Next</button>
+                </div>
+              </div>
+            </article>
+          </section>
+
+          <section class="patient-screen" data-screen="dia">
+            <article class="screen-card screen-card-entry">
+              <div class="step-progress">
+                <span class="step-dot active"></span>
+                <span class="step-dot active"></span>
+                <span class="step-dot"></span>
+                <span class="step-dot"></span>
+              </div>
+              <div class="entry-stage">
+                <div class="screen-copy">
+                  <p class="screen-kicker">Step 2</p>
+                  <h2>DIA</h2>
+                </div>
+                <label class="single-input-card">
+                  <span class="sr-only">Diastolic</span>
+                  <input
+                    id="diaInput"
+                    type="tel"
+                    inputmode="numeric"
+                    pattern="[0-9]*"
+                    maxlength="3"
+                    placeholder="80"
+                  />
+                </label>
+                <div class="screen-actions screen-actions-inline">
+                  <button class="ghost-button" type="button" data-action="to-sys">Back</button>
+                  <button class="primary-button" id="diaNextButton" type="button" data-action="to-pulse">Next</button>
+                </div>
+              </div>
+            </article>
+          </section>
+
+          <section class="patient-screen" data-screen="pulse">
+            <article class="screen-card screen-card-entry">
+              <div class="step-progress">
+                <span class="step-dot active"></span>
+                <span class="step-dot active"></span>
+                <span class="step-dot active"></span>
+                <span class="step-dot"></span>
+              </div>
+              <div class="entry-stage">
+                <div class="screen-copy">
+                  <p class="screen-kicker">Step 3</p>
+                  <h2>Pulse</h2>
+                </div>
+                <label class="single-input-card">
+                  <span class="sr-only">Pulse</span>
+                  <input
+                    id="pulseInput"
+                    type="tel"
+                    inputmode="numeric"
+                    pattern="[0-9]*"
+                    maxlength="3"
+                    placeholder="72"
+                  />
+                </label>
+                <div class="screen-actions screen-actions-inline">
+                  <button class="ghost-button" type="button" data-action="to-dia">Back</button>
+                  <button class="primary-button" id="pulseNextButton" type="button" data-action="to-context">Next</button>
+                </div>
+              </div>
+            </article>
+          </section>
+
+          <section class="patient-screen" data-screen="context">
+            <article class="screen-card screen-card-entry screen-card-context">
+              <div class="step-progress">
+                <span class="step-dot active"></span>
+                <span class="step-dot active"></span>
+                <span class="step-dot active"></span>
+                <span class="step-dot active"></span>
+              </div>
+              <div class="entry-stage entry-stage-context">
+                <div class="screen-copy">
+                  <p class="screen-kicker">Step 4</p>
+                  <h2>Context</h2>
+                </div>
+                <div class="context-stack">
+                  <label class="context-card">
+                    <input id="ateRecently" type="checkbox" />
+                    <span>Ate in the last 2 hours</span>
+                  </label>
+                  <label class="context-card">
+                    <input id="hadCaffeine" type="checkbox" />
+                    <span>Had tea or coffee</span>
+                  </label>
+                  <label class="context-card">
+                    <input id="afterWaking" type="checkbox" />
+                    <span>After waking up</span>
+                  </label>
+                  <label class="context-card">
+                    <input id="afterNap" type="checkbox" />
+                    <span>After a nap</span>
+                  </label>
+                  <label class="context-card">
+                    <input id="afterMedication" type="checkbox" />
+                    <span>After medicine</span>
+                  </label>
+                </div>
+                <div class="screen-actions screen-actions-inline">
+                  <button class="ghost-button" type="button" data-action="to-pulse">Back</button>
+                  <button class="primary-button" type="button" data-action="save-reading">See trends</button>
+                </div>
+              </div>
+            </article>
+          </section>
+
+          <section class="patient-screen" data-screen="trends">
+            <article class="screen-card screen-card-trends">
+              <div class="screen-copy">
+                <p class="screen-kicker" id="trendHeroChip">7 days</p>
+                <h2 id="trendHeroTitle">Recent readings</h2>
+                <p class="hero-subcopy" id="trendHeroCopy">Latest pattern.</p>
+              </div>
+              <section class="range-pills" role="group" aria-label="Patient trend range">
+                <button class="range-button active" data-range="7" type="button">7D</button>
+                <button class="range-button" data-range="30" type="button">30D</button>
+                <button class="range-button" data-range="90" type="button">90D</button>
+                <button class="range-button" data-range="all" type="button">All</button>
+              </section>
+              <section class="metric-rail" id="patientTrendMetrics"></section>
+              <article class="chart-card compact-chart-card">
+                <canvas id="patientTrendChart" width="640" height="240" aria-label="Patient trend chart"></canvas>
+              </article>
+              <article class="soft-card compact-note-card">
+                <div id="patientTrendNarrative" class="narrative-copy"></div>
+              </article>
+              <div class="screen-actions">
+                <button class="ghost-button" type="button" data-action="go-home">Home</button>
+                <button class="primary-button" type="button" data-action="start-log">Log</button>
+              </div>
+            </article>
+          </section>
+        </section>
+
+        <section id="caregiverView" class="mode-shell caregiver-shell">
+          <article class="hero-card hero-card-caregiver">
+            <div class="hero-head">
+              <p class="hero-greeting">Caregiver dashboard</p>
+              <span class="hero-chip" id="caregiverHeroChip">Live</span>
+            </div>
+            <h2 class="hero-title" id="caregiverHeroTitle">Waiting for the first reading</h2>
+            <p class="hero-subcopy" id="caregiverHeroCopy">
+              See patterns, timing, and context without the patient entry flow.
+            </p>
+          </article>
+
+          <section class="dashboard-grid">
+            <article class="soft-card soft-card-accent">
+              <p class="section-kicker">Overview</p>
+              <div id="caregiverOverviewMetrics" class="metric-grid"></div>
+            </article>
+
+            <article class="soft-card">
+              <div class="section-head">
+                <div>
+                  <p class="section-kicker">Range</p>
+                  <h3>Trend comparison</h3>
+                </div>
+                <button id="exportCsvButton" class="ghost-button" type="button">Export CSV</button>
+              </div>
+              <div class="range-pills" role="group" aria-label="Caregiver trend range">
+                <button class="dashboard-range-button active" data-dashboard-range="7" type="button">7D</button>
+                <button class="dashboard-range-button" data-dashboard-range="30" type="button">30D</button>
+                <button class="dashboard-range-button" data-dashboard-range="90" type="button">90D</button>
+                <button class="dashboard-range-button" data-dashboard-range="all" type="button">All</button>
+              </div>
+              <canvas id="caregiverTrendChart" width="840" height="340" aria-label="Caregiver trend chart"></canvas>
+              <div id="caregiverTrendNarrative" class="narrative-copy"></div>
+            </article>
+
+            <article class="soft-card">
+              <div class="section-head">
+                <div>
+                  <p class="section-kicker">Patterns</p>
+                  <h3>What stands out</h3>
+                </div>
+              </div>
+              <div id="caregiverInsights" class="insight-stack"></div>
+            </article>
+
+            <article class="soft-card">
+              <div class="section-head">
+                <div>
+                  <p class="section-kicker">Recent flags</p>
+                  <h3>Needs follow-up</h3>
+                </div>
+              </div>
+              <div id="caregiverFlagged" class="list-stack"></div>
+            </article>
+
+            <article class="soft-card soft-card-wide">
+              <div class="section-head">
+                <div>
+                  <p class="section-kicker">Recent readings</p>
+                  <h3>History</h3>
+                </div>
+                <div class="table-actions">
+                  <label class="search-input">
+                    <span class="sr-only">Search readings</span>
+                    <input id="historySearch" type="search" placeholder="Search notes or context" />
+                  </label>
+                  <button id="exportJsonButton" class="ghost-button" type="button">Export JSON</button>
+                </div>
+              </div>
+              <div id="caregiverHistory" class="history-list"></div>
+            </article>
+          </section>
+        </section>
+      </main>
+    </div>
+
+    <template id="metricTemplate">
+      <article class="metric-card">
+        <p class="metric-label"></p>
+        <strong class="metric-value"></strong>
+        <p class="metric-detail"></p>
+      </article>
+    </template>
+
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>
