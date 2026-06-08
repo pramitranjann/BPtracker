@@ -508,6 +508,7 @@ h3 {
 }
 
 .range-button,
+.timing-button,
 .dashboard-range-button,
 .ghost-button,
 .primary-button {
@@ -521,6 +522,7 @@ h3 {
 }
 
 .range-button,
+.timing-button,
 .dashboard-range-button,
 .ghost-button {
   padding: 0 16px;
@@ -531,6 +533,7 @@ h3 {
 }
 
 .range-button.active,
+.timing-button.active,
 .dashboard-range-button.active {
   background: var(--accent);
   border-color: #d4b100;
@@ -553,8 +556,19 @@ h3 {
 .ghost-button:active,
 .primary-button:active,
 .range-button:active,
+.timing-button:active,
 .dashboard-range-button:active {
   transform: scale(0.96);
+}
+
+.timing-pills {
+  gap: 8px;
+}
+
+.timing-button {
+  min-height: 42px;
+  padding-inline: 14px;
+  font-size: 0.92rem;
 }
 
 .primary-button:disabled:active {

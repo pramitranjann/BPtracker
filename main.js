@@ -7,6 +7,7 @@ const state = isBrowser
   ? {
       readings: [],
       patientRange: "7",
+      patientTiming: "all",
       caregiverRange: "30",
       patientScreen: "home",
       view: getCurrentView(),
@@ -20,6 +21,7 @@ const els = isBrowser
   ? {
       patientScreens: [...document.querySelectorAll(".patient-screen")],
       patientRangeButtons: [...document.querySelectorAll(".range-button")],
+      patientTimingButtons: [...document.querySelectorAll(".timing-button")],
       caregiverRangeButtons: [...document.querySelectorAll(".dashboard-range-button")],
       switchViewLink: document.querySelector("#switchViewLink"),
       installButton: document.querySelector("#installButton"),
@@ -138,6 +140,13 @@ function wireRangeButtons() {
   els.patientRangeButtons.forEach((button) => {
     button.addEventListener("click", () => {
       state.patientRange = button.dataset.range || "7";
+      renderPatientTrends();
+    });
+  });
+
+  els.patientTimingButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      state.patientTiming = button.dataset.timing || "all";
       renderPatientTrends();
     });
   });
@@ -317,8 +326,11 @@ function renderPatientTrends() {
   els.patientRangeButtons.forEach((button) => {
     button.classList.toggle("active", button.dataset.range === state.patientRange);
   });
+  els.patientTimingButtons.forEach((button) => {
+    button.classList.toggle("active", button.dataset.timing === state.patientTiming);
+  });
 
-  const readings = getReadingsForRange(state.patientRange);
+  const readings = filterReadingsByTiming(getReadingsForRange(state.patientRange), state.patientTiming);
   const latest = readings[0];
   const average = getAverage(readings);
 
@@ -336,7 +348,9 @@ function renderPatientTrends() {
   ]);
 
   els.trendHeroTitle.textContent = latest ? `${latest.systolic}/${latest.diastolic}` : "Recent readings";
-  els.trendHeroCopy.textContent = latest ? `${formatDate(latest.capturedAt)} • Pulse ${latest.pulse}` : "No readings yet.";
+  els.trendHeroCopy.textContent = latest
+    ? `${formatTimingLabel(state.patientTiming)} • ${formatDate(latest.capturedAt)} • Pulse ${latest.pulse}`
+    : "No readings yet.";
 
   if (!readings.length) {
     els.patientRecentLogs.innerHTML = "<p class=\"history-meta\">No readings yet.</p>";
@@ -366,6 +380,31 @@ function renderPatientRecentLogs(readings) {
     `;
     els.patientRecentLogs.append(item);
   }
+}
+
+function filterReadingsByTiming(readings, timing) {
+  if (timing === "all") {
+    return readings;
+  }
+
+  return readings.filter((reading) => {
+    const hour = getHour(reading.capturedAt);
+    if (timing === "morning") return hour >= 5 && hour < 12;
+    if (timing === "afternoon") return hour >= 12 && hour < 17;
+    if (timing === "evening") return hour >= 17 && hour < 21;
+    if (timing === "night") return hour >= 21 || hour < 5;
+    return true;
+  });
+}
+
+function formatTimingLabel(timing) {
+  return {
+    all: "All day",
+    morning: "Morning",
+    afternoon: "Afternoon",
+    evening: "Evening",
+    night: "Night"
+  }[timing] || "All day";
 }
 
 function renderCaregiver() {
