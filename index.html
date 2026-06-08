@@ -187,6 +187,9 @@
 
           <section class="patient-screen" data-screen="trends">
             <article class="screen-card screen-card-trends">
+              <div class="screen-nav">
+                <button class="back-affordance" type="button" data-action="go-home">Back</button>
+              </div>
               <div class="screen-copy">
                 <h2 id="trendHeroTitle">Recent readings</h2>
                 <p class="hero-subcopy" id="trendHeroCopy">Latest pattern.</p>
@@ -218,11 +221,12 @@
                     </span>
                   </div>
                 </div>
-                <canvas id="patientTrendChart" width="640" height="300" aria-label="Patient trend chart"></canvas>
+                <canvas id="patientTrendChart" width="640" height="420" aria-label="Patient trend chart"></canvas>
+                <div id="patientTrendSelection" class="trend-selection" aria-live="polite"></div>
               </article>
               <section class="metric-rail" id="patientTrendMetrics"></section>
               <details class="history-disclosure">
-                <summary>Recent readings</summary>
+                <summary id="patientRecentSummary">Recent readings</summary>
                 <div id="patientRecentLogs" class="patient-log-list"></div>
               </details>
               <div class="screen-actions">

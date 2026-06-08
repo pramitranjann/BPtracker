@@ -510,6 +510,7 @@ h3 {
 .range-button,
 .timing-button,
 .dashboard-range-button,
+.back-affordance,
 .ghost-button,
 .primary-button {
   min-height: 56px;
@@ -524,6 +525,7 @@ h3 {
 .range-button,
 .timing-button,
 .dashboard-range-button,
+.back-affordance,
 .ghost-button {
   padding: 0 16px;
   border: 1px solid var(--line);
@@ -557,6 +559,7 @@ h3 {
 .primary-button:active,
 .range-button:active,
 .timing-button:active,
+.back-affordance:active,
 .dashboard-range-button:active {
   transform: scale(0.96);
 }
@@ -608,6 +611,24 @@ h3 {
   padding: 14px 14px 10px;
 }
 
+.screen-nav {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.back-affordance {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: 999px;
+  font-weight: 700;
+}
+
+.back-affordance::before {
+  content: "←";
+  font-size: 0.95rem;
+}
+
 .compact-note-card {
   padding: 16px 18px;
 }
@@ -647,6 +668,21 @@ h3 {
 
 .legend-swatch-dia {
   background: #e8c21c;
+}
+
+#patientTrendChart {
+  height: 280px;
+  touch-action: pan-y;
+}
+
+.trend-selection {
+  display: grid;
+  gap: 2px;
+  margin-top: 14px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: var(--surface-muted);
+  font-variant-numeric: tabular-nums;
 }
 
 .history-disclosure {
@@ -815,12 +851,14 @@ body[data-view="patient"] .choice-card-accent {
 
 body[data-view="patient"] .ghost-button,
 body[data-view="patient"] .primary-button,
-body[data-view="patient"] .range-button {
+body[data-view="patient"] .range-button,
+body[data-view="patient"] .back-affordance {
   min-height: 44px;
   border-radius: 12px;
 }
 
-body[data-view="patient"] .ghost-button {
+body[data-view="patient"] .ghost-button,
+body[data-view="patient"] .back-affordance {
   background: #fffdf8;
 }
 
@@ -837,6 +875,14 @@ body[data-view="patient"] .compact-chart-card,
 body[data-view="patient"] .compact-note-card {
   border-radius: 18px;
   box-shadow: none;
+}
+
+body[data-view="patient"] #patientTrendChart {
+  height: 300px;
+}
+
+body[data-view="patient"] .trend-selection {
+  border-radius: 14px;
 }
 
 body[data-view="patient"] .metric-card {

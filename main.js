@@ -2,12 +2,14 @@ const API_BASE = "/api";
 const SAMPLE_COUNT = 18;
 const PATIENT_LOG_ORDER = ["sys", "dia", "pulse", "context"];
 const isBrowser = typeof window !== "undefined" && typeof document !== "undefined";
+const chartRegistry = new WeakMap();
 
 const state = isBrowser
   ? {
       readings: [],
       patientRange: "7",
       patientTiming: "all",
+      patientTrendSelectionIndex: null,
       caregiverRange: "30",
       patientScreen: "home",
       view: getCurrentView(),
@@ -46,6 +48,8 @@ const els = isBrowser
       trendHeroCopy: document.querySelector("#trendHeroCopy"),
       patientTrendMetrics: document.querySelector("#patientTrendMetrics"),
       patientTrendChart: document.querySelector("#patientTrendChart"),
+      patientTrendSelection: document.querySelector("#patientTrendSelection"),
+      patientRecentSummary: document.querySelector("#patientRecentSummary"),
       patientRecentLogs: document.querySelector("#patientRecentLogs"),
       caregiverHeroChip: document.querySelector("#caregiverHeroChip"),
       caregiverHeroTitle: document.querySelector("#caregiverHeroTitle"),
@@ -75,6 +79,7 @@ async function init() {
   wirePatientNavigation();
   wirePatientInputs();
   wireRangeButtons();
+  wireChartInteractions();
   wireInstallPrompt();
   wireActions();
   wireHistorySearch();
@@ -140,6 +145,7 @@ function wireRangeButtons() {
   els.patientRangeButtons.forEach((button) => {
     button.addEventListener("click", () => {
       state.patientRange = button.dataset.range || "7";
+      state.patientTrendSelectionIndex = null;
       renderPatientTrends();
     });
   });
@@ -147,6 +153,7 @@ function wireRangeButtons() {
   els.patientTimingButtons.forEach((button) => {
     button.addEventListener("click", () => {
       state.patientTiming = button.dataset.timing || "all";
+      state.patientTrendSelectionIndex = null;
       renderPatientTrends();
     });
   });
@@ -156,6 +163,52 @@ function wireRangeButtons() {
       state.caregiverRange = button.dataset.dashboardRange || "30";
       renderCaregiver();
     });
+  });
+}
+
+function wireChartInteractions() {
+  if (!els.patientTrendChart) return;
+
+  const updateSelection = (clientX) => {
+    const chart = chartRegistry.get(els.patientTrendChart);
+    if (!chart?.points?.length) return;
+
+    const bounds = els.patientTrendChart.getBoundingClientRect();
+    const x = clientX - bounds.left;
+    let nearest = 0;
+    let distance = Number.POSITIVE_INFINITY;
+
+    chart.points.forEach((point, index) => {
+      const nextDistance = Math.abs(point.x - x);
+      if (nextDistance < distance) {
+        distance = nextDistance;
+        nearest = index;
+      }
+    });
+
+    if (nearest !== state.patientTrendSelectionIndex) {
+      state.patientTrendSelectionIndex = nearest;
+      renderPatientTrends();
+    }
+  };
+
+  els.patientTrendChart.addEventListener("pointerdown", (event) => {
+    updateSelection(event.clientX);
+  });
+
+  els.patientTrendChart.addEventListener("pointermove", (event) => {
+    if (event.pointerType === "mouse") {
+      updateSelection(event.clientX);
+    }
+  });
+
+  window.addEventListener("resize", () => {
+    if (state.view === "patient" && state.patientScreen === "trends") {
+      renderPatientTrends();
+    }
+    if (state.view === "caregiver") {
+      renderCaregiver();
+    }
   });
 }
 
@@ -264,6 +317,11 @@ async function saveDraftReading() {
 function goToPatientScreen(screen) {
   state.patientScreen = screen;
   renderPatientScreens();
+  if (screen === "trends") {
+    window.requestAnimationFrame(() => {
+      renderPatientTrends();
+    });
+  }
 }
 
 function render() {
@@ -353,19 +411,36 @@ function renderPatientTrends() {
     : "No readings yet.";
 
   if (!readings.length) {
+    state.patientTrendSelectionIndex = null;
+    if (els.patientRecentSummary) {
+      els.patientRecentSummary.textContent = "Recent readings";
+    }
     els.patientRecentLogs.innerHTML = "<p class=\"history-meta\">No readings yet.</p>";
+    updatePatientTrendSelection();
     drawTrendChart(els.patientTrendChart, []);
     return;
   }
 
-  drawTrendChart(els.patientTrendChart, readings, { compact: true });
+  const chart = drawTrendChart(els.patientTrendChart, readings, {
+    compact: true,
+    collapse: "reading",
+    interactive: true,
+    selectedIndex: state.patientTrendSelectionIndex
+  });
+  state.patientTrendSelectionIndex = chart?.selectedIndex ?? null;
+  updatePatientTrendSelection(chart?.readings?.[chart.selectedIndex] || latest);
   renderPatientRecentLogs(readings);
 }
 
 function renderPatientRecentLogs(readings) {
+  if (els.patientRecentSummary) {
+    const label = readings.length === 1 ? "reading" : "readings";
+    els.patientRecentSummary.textContent = `${readings.length} ${label}`;
+  }
+
   els.patientRecentLogs.innerHTML = "";
 
-  for (const reading of readings.slice(0, 8)) {
+  for (const reading of readings) {
     const item = document.createElement("article");
     item.className = "patient-log-item";
     item.innerHTML = `
@@ -653,25 +728,30 @@ function renderMetricGrid(target, cards) {
 }
 
 function drawTrendChart(canvas, readings, options = {}) {
+  const plottedReadings = getChartReadings(readings, options.collapse);
+  const selectedIndex = clampIndex(options.selectedIndex, plottedReadings.length - 1);
+  const metrics = prepareCanvas(canvas);
   const ctx = canvas.getContext("2d");
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.setTransform(metrics.dpr, 0, 0, metrics.dpr, 0, 0);
 
-  if (!readings.length) {
+  if (!plottedReadings.length) {
     ctx.fillStyle = "#70685d";
     ctx.font = "16px Avenir Next, sans-serif";
     ctx.fillText("No readings yet", 24, 40);
+    chartRegistry.delete(canvas);
     return;
   }
 
-  const daily = collapseByDay(readings).reverse();
   const padding = options.compact
-    ? { top: 24, right: 18, bottom: 24, left: 40 }
-    : { top: 30, right: 24, bottom: 30, left: 44 };
-  const values = daily.flatMap((reading) => [reading.systolic, reading.diastolic]);
+    ? { top: 18, right: 18, bottom: 48, left: 40 }
+    : { top: 24, right: 24, bottom: 48, left: 44 };
+  const values = plottedReadings.flatMap((reading) => [reading.systolic, reading.diastolic]);
   const minValue = Math.max(40, Math.min(...values) - 10);
   const maxValue = Math.min(220, Math.max(...values) + 10);
-  const chartWidth = canvas.width - padding.left - padding.right;
-  const chartHeight = canvas.height - padding.top - padding.bottom;
+  const chartWidth = metrics.cssWidth - padding.left - padding.right;
+  const chartHeight = metrics.cssHeight - padding.top - padding.bottom;
 
   ctx.strokeStyle = "rgba(38, 30, 19, 0.12)";
   ctx.lineWidth = 1;
@@ -679,7 +759,7 @@ function drawTrendChart(canvas, readings, options = {}) {
     const y = padding.top + (chartHeight / 4) * i;
     ctx.beginPath();
     ctx.moveTo(padding.left, y);
-    ctx.lineTo(canvas.width - padding.right, y);
+    ctx.lineTo(metrics.cssWidth - padding.right, y);
     ctx.stroke();
   }
 
@@ -691,29 +771,52 @@ function drawTrendChart(canvas, readings, options = {}) {
     ctx.fillText(String(value), 8, y);
   }
 
-  drawSeries(ctx, daily, {
+  drawAxisLabels(ctx, plottedReadings, { padding, chartWidth, chartHeight, canvasHeight: metrics.cssHeight });
+
+  const points = drawSeries(ctx, plottedReadings, {
     key: "systolic",
     color: "#262032",
     minValue,
     maxValue,
     padding,
     chartWidth,
-    chartHeight
+    chartHeight,
+    selectedIndex
   });
-  drawSeries(ctx, daily, {
+  drawSeries(ctx, plottedReadings, {
     key: "diastolic",
     color: "#e8c21c",
     minValue,
     maxValue,
     padding,
     chartWidth,
-    chartHeight
+    chartHeight,
+    selectedIndex
   });
+
+  if (Number.isInteger(selectedIndex) && points[selectedIndex]) {
+    const point = points[selectedIndex];
+    ctx.strokeStyle = "rgba(23, 20, 18, 0.16)";
+    ctx.lineWidth = 1;
+    ctx.setLineDash([4, 6]);
+    ctx.beginPath();
+    ctx.moveTo(point.x, padding.top);
+    ctx.lineTo(point.x, padding.top + chartHeight);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  if (options.interactive) {
+    chartRegistry.set(canvas, { points, readings: plottedReadings, selectedIndex });
+  }
+
+  return { points, readings: plottedReadings, selectedIndex };
 }
 
 function drawSeries(ctx, readings, options) {
-  const { key, color, minValue, maxValue, padding, chartWidth, chartHeight } = options;
+  const { key, color, minValue, maxValue, padding, chartWidth, chartHeight, selectedIndex } = options;
   const range = maxValue - minValue || 1;
+  const points = [];
 
   ctx.strokeStyle = color;
   ctx.lineWidth = 4;
@@ -722,6 +825,7 @@ function drawSeries(ctx, readings, options) {
   readings.forEach((reading, index) => {
     const x = padding.left + (chartWidth / Math.max(readings.length - 1, 1)) * index;
     const y = padding.top + chartHeight - ((reading[key] - minValue) / range) * chartHeight;
+    points.push({ x, y });
     if (index === 0) {
       ctx.moveTo(x, y);
     } else {
@@ -732,16 +836,93 @@ function drawSeries(ctx, readings, options) {
   ctx.stroke();
 
   readings.forEach((reading, index) => {
-    const x = padding.left + (chartWidth / Math.max(readings.length - 1, 1)) * index;
-    const y = padding.top + chartHeight - ((reading[key] - minValue) / range) * chartHeight;
+    const { x, y } = points[index];
     ctx.fillStyle = "#fffdf8";
     ctx.beginPath();
-    ctx.arc(x, y, 5, 0, Math.PI * 2);
+    ctx.arc(x, y, index === selectedIndex ? 7 : 5, 0, Math.PI * 2);
     ctx.fill();
     ctx.strokeStyle = color;
     ctx.lineWidth = 3;
     ctx.stroke();
   });
+
+  return points;
+}
+
+function drawAxisLabels(ctx, readings, options) {
+  const { padding, chartWidth, chartHeight, canvasHeight } = options;
+  const targets = [0, Math.floor((readings.length - 1) / 2), readings.length - 1];
+  const seen = new Set();
+
+  ctx.fillStyle = "#7a7368";
+  ctx.font = "12px Avenir Next, sans-serif";
+  ctx.textBaseline = "bottom";
+
+  for (const index of targets) {
+    if (seen.has(index) || !readings[index]) continue;
+    seen.add(index);
+    const x = padding.left + (chartWidth / Math.max(readings.length - 1, 1)) * index;
+    const label = formatAxisLabel(readings[index].capturedAt, readings);
+    const measured = ctx.measureText(label).width;
+    const clampedX = Math.max(0, Math.min(x - measured / 2, chartWidth + padding.left - measured));
+    ctx.fillText(label, clampedX, Math.min(canvasHeight - 8, padding.top + chartHeight + 30));
+  }
+}
+
+function prepareCanvas(canvas) {
+  const dpr = window.devicePixelRatio || 1;
+  const cssWidth = Math.max(Math.round(canvas.clientWidth || 320), 320);
+  const cssHeight = Math.max(Math.round(canvas.clientHeight || Number(canvas.getAttribute("height")) || 260), 220);
+  const width = Math.round(cssWidth * dpr);
+  const height = Math.round(cssHeight * dpr);
+
+  if (canvas.width !== width || canvas.height !== height) {
+    canvas.width = width;
+    canvas.height = height;
+  }
+
+  return { dpr, cssWidth, cssHeight };
+}
+
+function getChartReadings(readings, collapse = "day") {
+  if (collapse === "reading") {
+    return [...readings].sort((a, b) => new Date(a.capturedAt) - new Date(b.capturedAt));
+  }
+
+  return collapseByDay(readings).reverse();
+}
+
+function clampIndex(index, fallback) {
+  if (!Number.isInteger(index) || index < 0) {
+    return Math.max(fallback, 0);
+  }
+
+  return Math.min(index, fallback);
+}
+
+function updatePatientTrendSelection(reading) {
+  if (!els.patientTrendSelection) return;
+
+  if (!reading) {
+    els.patientTrendSelection.innerHTML = `
+      <p class="history-reading">No readings yet</p>
+      <p class="history-meta">Log a reading to see the trend.</p>
+    `;
+    return;
+  }
+
+  els.patientTrendSelection.innerHTML = `
+    <p class="history-reading">${reading.systolic}/${reading.diastolic} • Pulse ${reading.pulse}</p>
+    <p class="history-meta">${formatDate(reading.capturedAt)}</p>
+  `;
+}
+
+function formatAxisLabel(isoString, readings) {
+  const sameDay = readings.every((reading) => toLocalDayKey(reading.capturedAt) === toLocalDayKey(isoString));
+  return new Intl.DateTimeFormat(
+    undefined,
+    sameDay ? { hour: "numeric", minute: "2-digit" } : { month: "short", day: "numeric" }
+  ).format(new Date(isoString));
 }
 
 function collapseByDay(readings) {
